@@ -1,0 +1,169 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>AI Code Debug & Test Agent</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+  <header class="hero">
+    <div class="robot">🤖</div>
+
+    <h1>AI Code Debug & Test Agent</h1>
+
+    <p>
+      Intelligent Code Analysis • Bug Detection • Test Generation
+    </p>
+  </header>
+
+
+  <section class="input-card">
+
+    <h2>💻 Code Analysis</h2>
+
+    <label>Programming Language</label>
+
+    <select id="language">
+      <option value="JavaScript">JavaScript</option>
+      <option value="Python">Python</option>
+      <option value="Java">Java</option>
+    </select>
+
+    <label>Paste Your Source Code</label>
+
+    <textarea
+      id="code"
+      placeholder="// Paste your code here..."
+    ></textarea>
+
+    <button onclick="analyzeCode()">
+      🔍 Analyze Code
+    </button>
+
+  </section>
+
+
+  <div id="loading" class="loading hidden">
+    <div class="loader">🤖</div>
+    <b>AI Agents are analyzing your code...</b>
+    <p>Please wait...</p>
+  </div>
+
+
+  <section id="results" class="results hidden">
+
+    <h2 class="result-title">📊 Analysis Results</h2>
+
+
+    <div class="summary">
+
+      <div class="summary-card">
+        <span>🐞</span>
+        <h3 id="issueCount">0</h3>
+        <p>Issues Detected</p>
+      </div>
+
+      <div class="summary-card">
+        <span>🧪</span>
+        <h3 id="testCount">0</h3>
+        <p>Test Cases</p>
+      </div>
+
+      <div class="summary-card">
+        <span>🎯</span>
+        <h3 id="scoreValue">0</h3>
+        <p>Code Score</p>
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2>🐞 Bugs & Errors</h2>
+
+      <div id="bugs"></div>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2>🧪 Generated Test Cases</h2>
+
+      <div id="tests"></div>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2>🔧 Fix Suggestions</h2>
+
+      <div id="fixes"></div>
+
+    </div>
+
+
+    <div class="card report-card">
+
+      <h2>📊 Analysis Report</h2>
+
+      <div id="report"></div>
+
+    </div>
+
+
+    <div class="workflow">
+
+      <h2>🤖 Agent Workflow</h2>
+
+      <div class="steps">
+
+        <div>
+          <span>1</span>
+          Bug Detection
+        </div>
+
+        <div>→</div>
+
+        <div>
+          <span>2</span>
+          Test Generation
+        </div>
+
+        <div>→</div>
+
+        <div>
+          <span>3</span>
+          Fix Suggestion
+        </div>
+
+        <div>→</div>
+
+        <div>
+          <span>4</span>
+          Report
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<script src="agents.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
