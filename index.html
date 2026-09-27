@@ -2,97 +2,68 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>AI Code Debug & Test Agent</title>
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
+    <link rel="stylesheet" href="style.css">
 </head>
-
 
 <body>
 
+<header class="top-header">
+    <div class="logo">
+        <span class="logo-icon">🤖</span>
+        <div>
+            <h1>AI Code Debug & Test Agent</h1>
+            <p>Automating Debugging • Testing • Fix Suggestions</p>
+        </div>
+    </div>
 
-<header>
-
-    <h1>
-        🤖 AI Code Debug & Test Agent
-    </h1>
-
-    <p>
-        Intelligent Code Analysis • Bug Detection • Test Generation
-    </p>
-
+    <div class="status">
+        <span class="status-dot"></span>
+        Agent Ready
+    </div>
 </header>
-
 
 
 <main>
 
+    <!-- CODE INPUT -->
 
-    <!-- CODE INPUT SECTION -->
+    <section class="card code-card">
 
-    <section class="card">
+        <div class="section-title">
+            <span class="title-icon">💻</span>
+            <div>
+                <h2>Code Analysis</h2>
+                <p>Analyze your source code and identify potential issues</p>
+            </div>
+        </div>
 
-        <h2>
-            💻 Code Analysis
-        </h2>
-
-
-        <label for="language">
-            Programming Language
-        </label>
-
+        <label for="language">Programming Language</label>
 
         <select id="language">
-
-            <option value="javascript">
-                JavaScript
-            </option>
-
-            <option value="python">
-                Python
-            </option>
-
-            <option value="java">
-                Java
-            </option>
-
-            <option value="c">
-                C
-            </option>
-
-            <option value="cpp">
-                C++
-            </option>
-
+            <option value="javascript">🟨 JavaScript</option>
+            <option value="python">🐍 Python</option>
+            <option value="java">☕ Java</option>
+            <option value="c">🔵 C</option>
+            <option value="cpp">⚡ C++</option>
         </select>
 
 
-
-        <label for="codeInput">
-            Paste Your Source Code
-        </label>
-
+        <label for="codeInput">Paste Your Source Code</label>
 
         <textarea
             id="codeInput"
-            placeholder="Paste your source code here..."
+            placeholder="// Paste your code here...
+// Example:
+// function divide(a, b) {
+//     return a / c;
+// }"
         ></textarea>
 
-
-
-        <!-- ACTION BUTTONS -->
 
         <div class="button-group">
 
@@ -100,15 +71,16 @@
                 id="analyzeButton"
                 type="button"
                 onclick="analyzeCode()"
+                class="analyze-btn"
             >
                 🔍 Analyze Code
             </button>
-
 
             <button
                 id="clearButton"
                 type="button"
                 onclick="clearCode()"
+                class="clear-btn"
             >
                 🗑️ Clear Code
             </button>
@@ -116,23 +88,15 @@
         </div>
 
 
-
-        <!-- LOADING -->
-
-        <div
-            id="loading"
-            class="loading"
-            style="display:none;"
-        >
-            Analyzing your code...
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <span>Analyzing your code...</span>
         </div>
 
     </section>
 
 
-
-
-    <!-- RESULTS SECTION -->
+    <!-- RESULTS -->
 
     <section
         id="results"
@@ -140,182 +104,271 @@
         style="display:none;"
     >
 
+        <div class="results-header">
+            <div>
+                <h2>📊 Analysis Results</h2>
+                <p>AI-powered developer workflow results</p>
+            </div>
 
-        <h2>
-            📊 Analysis Results
-        </h2>
-
+            <div class="result-status">
+                ✓ Analysis Complete
+            </div>
+        </div>
 
 
         <!-- SUMMARY -->
 
         <div class="summary">
 
-
-            <div class="summary-card">
-
-                <h3>
-                    🐞 Issues
-                </h3>
-
-                <strong id="issueCount">
-                    0
-                </strong>
-
+            <div class="summary-card issues-card">
+                <span class="summary-icon">🐞</span>
+                <div>
+                    <h3>Issues</h3>
+                    <strong id="issueCount">0</strong>
+                </div>
             </div>
 
-
-
-            <div class="summary-card">
-
-                <h3>
-                    🧪 Tests
-                </h3>
-
-                <strong id="testCount">
-                    0
-                </strong>
-
+            <div class="summary-card tests-card">
+                <span class="summary-icon">🧪</span>
+                <div>
+                    <h3>Tests</h3>
+                    <strong id="testCount">0</strong>
+                </div>
             </div>
 
-
-
-            <div class="summary-card">
-
-                <h3>
-                    📈 Score
-                </h3>
-
-                <strong id="score">
-                    100/100
-                </strong>
-
+            <div class="summary-card score-card">
+                <span class="summary-icon">📈</span>
+                <div>
+                    <h3>Code Score</h3>
+                    <strong id="score">100/100</strong>
+                </div>
             </div>
-
 
         </div>
 
 
+        <!-- NAVIGATION TABS -->
 
+        <div class="result-tabs">
 
-        <!-- BUG RESULTS -->
-
-        <div class="result-section">
-
-            <h2>
+            <button
+                class="result-tab active"
+                onclick="showResultTab('bugs', this)"
+            >
                 🐞 Bugs & Errors
-            </h2>
+            </button>
+
+            <button
+                class="result-tab"
+                onclick="showResultTab('tests', this)"
+            >
+                🧪 Test Cases
+            </button>
+
+            <button
+                class="result-tab"
+                onclick="showResultTab('fixes', this)"
+            >
+                🔧 Fix Suggestions
+            </button>
+
+            <button
+                class="result-tab"
+                onclick="showResultTab('report', this)"
+            >
+                📋 Analysis Report
+            </button>
+
+            <button
+                class="result-tab"
+                onclick="showResultTab('workflow', this)"
+            >
+                🤖 Agent Workflow
+            </button>
+
+        </div>
+
+
+        <!-- BUGS -->
+
+        <div
+            id="bugsTab"
+            class="result-panel active-panel"
+        >
+
+            <div class="panel-heading">
+                <span>🐞</span>
+                <div>
+                    <h2>Bugs & Errors</h2>
+                    <p>Potential problems detected in your source code</p>
+                </div>
+            </div>
 
             <div id="bugResults"></div>
 
         </div>
 
 
+        <!-- TESTS -->
 
+        <div
+            id="testsTab"
+            class="result-panel"
+        >
 
-        <!-- TEST RESULTS -->
-
-        <div class="result-section">
-
-            <h2>
-                🧪 Generated Test Cases
-            </h2>
+            <div class="panel-heading">
+                <span>🧪</span>
+                <div>
+                    <h2>Generated Test Cases</h2>
+                    <p>Automatically generated scenarios for testing</p>
+                </div>
+            </div>
 
             <div id="testResults"></div>
 
         </div>
 
 
+        <!-- FIXES -->
 
+        <div
+            id="fixesTab"
+            class="result-panel"
+        >
 
-        <!-- FIX RESULTS -->
-
-        <div class="result-section">
-
-            <h2>
-                🔧 Fix Suggestions
-            </h2>
+            <div class="panel-heading">
+                <span>🔧</span>
+                <div>
+                    <h2>Fix Suggestions</h2>
+                    <p>Recommended corrections for detected issues</p>
+                </div>
+            </div>
 
             <div id="fixResults"></div>
 
         </div>
 
 
-
-
         <!-- REPORT -->
 
-        <div class="result-section">
+        <div
+            id="reportTab"
+            class="result-panel"
+        >
 
-            <h2>
-                📋 Analysis Report
-            </h2>
+            <div class="panel-heading">
+                <span>📋</span>
+                <div>
+                    <h2>Analysis Report</h2>
+                    <p>Summary of the complete code analysis</p>
+                </div>
+            </div>
 
             <div id="reportResults"></div>
 
         </div>
 
 
+        <!-- WORKFLOW -->
+
+        <div
+            id="workflowTab"
+            class="result-panel"
+        >
+
+            <div class="panel-heading">
+                <span>🤖</span>
+                <div>
+                    <h2>Agent Workflow</h2>
+                    <p>How the code moves through the analysis pipeline</p>
+                </div>
+            </div>
 
 
-        <!-- AGENT WORKFLOW -->
+            <div class="workflow">
 
-        <div class="workflow">
+                <div class="workflow-step">
+                    <div class="workflow-icon">💻</div>
+                    <strong>Source Code</strong>
+                    <span>Input</span>
+                </div>
 
-            <h2>
-                🤖 Agent Workflow
-            </h2>
+                <div class="workflow-arrow">→</div>
 
+                <div class="workflow-step">
+                    <div class="workflow-icon">🐞</div>
+                    <strong>Bug Detection</strong>
+                    <span>Analyze</span>
+                </div>
 
-            <div class="workflow-flow">
+                <div class="workflow-arrow">→</div>
 
-                <span>
-                    Source Code
-                </span>
+                <div class="workflow-step">
+                    <div class="workflow-icon">🧪</div>
+                    <strong>Test Generation</strong>
+                    <span>Test</span>
+                </div>
 
-                →
+                <div class="workflow-arrow">→</div>
 
-                <span>
-                    Bug Detection
-                </span>
+                <div class="workflow-step">
+                    <div class="workflow-icon">🔧</div>
+                    <strong>Fix Suggestion</strong>
+                    <span>Repair</span>
+                </div>
 
-                →
+                <div class="workflow-arrow">→</div>
 
-                <span>
-                    Test Generation
-                </span>
-
-                →
-
-                <span>
-                    Fix Suggestion
-                </span>
-
-                →
-
-                <span>
-                    Report
-                </span>
+                <div class="workflow-step">
+                    <div class="workflow-icon">📋</div>
+                    <strong>Analysis Report</strong>
+                    <span>Report</span>
+                </div>
 
             </div>
 
         </div>
 
-
     </section>
-
 
 </main>
 
 
-
-<!-- JAVASCRIPT FILES -->
-
 <script src="agents.js"></script>
-
 <script src="app.js"></script>
 
 
-</body>
+<script>
 
+function showResultTab(tabName, button) {
+
+    const panels = document.querySelectorAll(".result-panel");
+
+    panels.forEach(function(panel) {
+        panel.classList.remove("active-panel");
+    });
+
+
+    const tabs = document.querySelectorAll(".result-tab");
+
+    tabs.forEach(function(tab) {
+        tab.classList.remove("active");
+    });
+
+
+    const selectedPanel = document.getElementById(tabName + "Tab");
+
+    if (selectedPanel) {
+        selectedPanel.classList.add("active-panel");
+    }
+
+
+    if (button) {
+        button.classList.add("active");
+    }
+}
+
+</script>
+
+</body>
 </html>
