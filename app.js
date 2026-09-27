@@ -37,17 +37,19 @@ function displayResults(bugs, tests, fixes, report) {
 
     document.getElementById("issueCount").textContent = bugs.length;
     document.getElementById("testCount").textContent = tests.length;
-    document.getElementById("score").textContent = report.score + "/100";
+    document.getElementById("score").textContent =
+        report.score + "/100";
 
 
     const bugBox = document.getElementById("bugResults");
 
     if (bugs.length === 0) {
 
-        bugBox.innerHTML =
-            `<div class="success-box">
+        bugBox.innerHTML = `
+            <div class="success-box">
                 ✓ No major issues detected.
-            </div>`;
+            </div>
+        `;
 
     } else {
 
@@ -124,13 +126,13 @@ function displayFixes(fixes) {
 
     const fixBox = document.getElementById("fixResults");
 
-
     if (fixes.length === 0) {
 
-        fixBox.innerHTML =
-            `<div class="success-box">
+        fixBox.innerHTML = `
+            <div class="success-box">
                 ✓ No fixes required.
-            </div>`;
+            </div>
+        `;
 
         return;
     }
@@ -180,7 +182,6 @@ function displayFixes(fixes) {
                 ${escapeHtml(fix.confidence)}
             </p>
 
-
             <button
                 class="apply-btn"
                 onclick="applyFix(${index})">
@@ -188,7 +189,6 @@ function displayFixes(fixes) {
                 ✓ Apply Fix
 
             </button>
-
 
             <div
                 id="fixMessage${index}"
@@ -223,10 +223,6 @@ function applyFix(index) {
     const newCode = fix.newCode;
 
 
-    /*
-     * First try exact replacement
-     */
-
     const position =
         source.indexOf(oldCode);
 
@@ -248,25 +244,14 @@ function applyFix(index) {
         );
 
 
-        /*
-         * Re-analyze after applying fix
-         */
-
         setTimeout(() => {
-
             analyzeCode();
-
         }, 700);
 
 
         return;
     }
 
-
-    /*
-     * If exact replacement fails,
-     * try replacing inside the detected line.
-     */
 
     const lines =
         source.split(/\r?\n/);
@@ -283,9 +268,9 @@ function applyFix(index) {
         const line =
             lines[lineNumber - 1];
 
+
         /*
-         * Special handling for
-         * missing colon fixes.
+         * Handle missing colon
          */
 
         if (
@@ -310,9 +295,7 @@ function applyFix(index) {
 
 
                 setTimeout(() => {
-
                     analyzeCode();
-
                 }, 700);
 
 
@@ -334,8 +317,7 @@ function applyFix(index) {
                 ) +
                 newCode +
                 line.substring(
-                    linePosition +
-                    oldCode.length
+                    linePosition + oldCode.length
                 );
 
 
@@ -351,9 +333,7 @@ function applyFix(index) {
 
 
             setTimeout(() => {
-
                 analyzeCode();
-
             }, 700);
 
 
@@ -385,7 +365,6 @@ function showFixMessage(index, message, type) {
 
     box.textContent = message;
 
-
     box.className =
         "fix-message " + type;
 
@@ -398,6 +377,75 @@ function showFixMessage(index, message, type) {
             "fix-message";
 
     }, 4000);
+}
+
+
+/*
+ * CLEAR CODE
+ */
+
+function clearCode() {
+
+    const codeInput =
+        document.getElementById("codeInput");
+
+    codeInput.value = "";
+
+
+    /*
+     * Hide previous results
+     */
+
+    document.getElementById("results").style.display =
+        "none";
+
+    document.getElementById("loading").style.display =
+        "none";
+
+
+    /*
+     * Clear result sections
+     */
+
+    document.getElementById("bugResults").innerHTML =
+        "";
+
+    document.getElementById("testResults").innerHTML =
+        "";
+
+    document.getElementById("fixResults").innerHTML =
+        "";
+
+    document.getElementById("reportResults").innerHTML =
+        "";
+
+
+    /*
+     * Reset summary cards
+     */
+
+    document.getElementById("issueCount").textContent =
+        "0";
+
+    document.getElementById("testCount").textContent =
+        "0";
+
+    document.getElementById("score").textContent =
+        "100/100";
+
+
+    /*
+     * Reset current analysis
+     */
+
+    currentAnalysis = null;
+
+
+    /*
+     * Put cursor back into code editor
+     */
+
+    codeInput.focus();
 }
 
 
