@@ -1,46 +1,22 @@
 let currentAnalysis = null;
 
-
-// ==========================================
-// ANALYZE CODE
-// ==========================================
-
 function analyzeCode() {
-
-    const code =
-        document.getElementById("codeInput").value;
-
-    const language =
-        document.getElementById("language").value;
-
+    const code = document.getElementById("codeInput").value;
+    const language = document.getElementById("language").value;
 
     if (!code.trim()) {
-
         alert("Please enter some code.");
-
         return;
     }
 
-
     document.getElementById("loading").style.display = "block";
-
     document.getElementById("results").style.display = "none";
 
-
     setTimeout(() => {
-
-        const bugs =
-            bugDetectionAgent(code, language);
-
-        const tests =
-            testGenerationAgent(code, language);
-
-        const fixes =
-            fixSuggestionAgent(code, language, bugs);
-
-        const report =
-            reportAgent(bugs, tests);
-
+        const bugs = bugDetectionAgent(code, language);
+        const tests = testGenerationAgent(code, language);
+        const fixes = fixSuggestionAgent(code, language, bugs);
+        const report = reportAgent(bugs, tests);
 
         currentAnalysis = {
             bugs: bugs,
@@ -49,62 +25,33 @@ function analyzeCode() {
             report: report
         };
 
-
-        displayResults(
-            bugs,
-            tests,
-            fixes,
-            report
-        );
-
+        displayResults(bugs, tests, fixes, report);
 
         document.getElementById("loading").style.display = "none";
-
         document.getElementById("results").style.display = "block";
-
     }, 500);
 }
 
 
-// ==========================================
-// DISPLAY RESULTS
-// ==========================================
+function displayResults(bugs, tests, fixes, report) {
 
-function displayResults(
-    bugs,
-    tests,
-    fixes,
-    report
-) {
-
-    document.getElementById("issueCount").textContent =
-        bugs.length;
-
-    document.getElementById("testCount").textContent =
-        tests.length;
-
-    document.getElementById("score").textContent =
-        report.score + "/100";
+    document.getElementById("issueCount").textContent = bugs.length;
+    document.getElementById("testCount").textContent = tests.length;
+    document.getElementById("score").textContent = report.score + "/100";
 
 
-    // Bugs
-
-    const bugBox =
-        document.getElementById("bugResults");
-
+    const bugBox = document.getElementById("bugResults");
 
     if (bugs.length === 0) {
 
-        bugBox.innerHTML = `
-            <div class="success-box">
+        bugBox.innerHTML =
+            `<div class="success-box">
                 ✓ No major issues detected.
-            </div>
-        `;
+            </div>`;
 
     } else {
 
         bugBox.innerHTML = bugs.map(bug => `
-
             <div class="bug-card ${bug.severity.toLowerCase()}">
 
                 <strong>
@@ -120,41 +67,31 @@ function displayResults(
                 </span>
 
             </div>
-
         `).join("");
-
     }
 
 
-    // Tests
+    const testBox = document.getElementById("testResults");
 
-    document.getElementById("testResults").innerHTML =
-        tests.map(test => `
+    testBox.innerHTML = tests.map(test => `
+        <div class="test-card">
 
-            <div class="test-card">
+            <strong>
+                ${escapeHtml(test.name)}
+            </strong>
 
-                <strong>
-                    ${escapeHtml(test.name)}
-                </strong>
+            <p>
+                ${escapeHtml(test.description)}
+            </p>
 
-                <p>
-                    ${escapeHtml(test.description)}
-                </p>
+        </div>
+    `).join("");
 
-            </div>
-
-        `).join("");
-
-
-    // Fixes
 
     displayFixes(fixes);
 
 
-    // Report
-
     document.getElementById("reportResults").innerHTML = `
-
         <div class="report-box">
 
             <h3>Analysis Report</h3>
@@ -179,28 +116,21 @@ function displayResults(
             </p>
 
         </div>
-
     `;
 }
 
 
-// ==========================================
-// FIX DISPLAY
-// ==========================================
-
 function displayFixes(fixes) {
 
-    const fixBox =
-        document.getElementById("fixResults");
+    const fixBox = document.getElementById("fixResults");
 
 
     if (fixes.length === 0) {
 
-        fixBox.innerHTML = `
-            <div class="success-box">
+        fixBox.innerHTML =
+            `<div class="success-box">
                 ✓ No fixes required.
-            </div>
-        `;
+            </div>`;
 
         return;
     }
@@ -241,11 +171,8 @@ function displayFixes(fixes) {
             </div>
 
             <p class="recommendation">
-
                 <strong>Recommendation:</strong>
-
                 ${escapeHtml(fix.recommendation)}
-
             </p>
 
             <p>
@@ -274,10 +201,6 @@ function displayFixes(fixes) {
 }
 
 
-// ==========================================
-// APPLY FIX
-// ==========================================
-
 function applyFix(index) {
 
     if (
@@ -285,32 +208,24 @@ function applyFix(index) {
         !currentAnalysis.fixes ||
         !currentAnalysis.fixes[index]
     ) {
-
         return;
     }
 
 
-    const fix =
-        currentAnalysis.fixes[index];
-
+    const fix = currentAnalysis.fixes[index];
 
     const textarea =
         document.getElementById("codeInput");
 
+    let source = textarea.value;
 
-    let source =
-        textarea.value;
-
-
-    const oldCode =
-        fix.oldCode;
+    const oldCode = fix.oldCode;
+    const newCode = fix.newCode;
 
 
-    const newCode =
-        fix.newCode;
-
-
-    // Find exact text
+    /*
+     * First try exact replacement
+     */
 
     const position =
         source.indexOf(oldCode);
@@ -328,19 +243,33 @@ function applyFix(index) {
 
         showFixMessage(
             index,
-            "✓ Fix applied successfully!",
+            "✓ Fix applied successfully! Re-analyzing code...",
             "success"
         );
+
+
+        /*
+         * Re-analyze after applying fix
+         */
+
+        setTimeout(() => {
+
+            analyzeCode();
+
+        }, 700);
+
 
         return;
     }
 
 
-    // Try line-based replacement
+    /*
+     * If exact replacement fails,
+     * try replacing inside the detected line.
+     */
 
     const lines =
         source.split(/\r?\n/);
-
 
     const lineNumber =
         Number(fix.line);
@@ -353,6 +282,43 @@ function applyFix(index) {
 
         const line =
             lines[lineNumber - 1];
+
+        /*
+         * Special handling for
+         * missing colon fixes.
+         */
+
+        if (
+            oldCode === "" &&
+            newCode === ":"
+        ) {
+
+            if (!line.trim().endsWith(":")) {
+
+                lines[lineNumber - 1] =
+                    line + ":";
+
+                textarea.value =
+                    lines.join("\n");
+
+
+                showFixMessage(
+                    index,
+                    "✓ Fix applied successfully! Re-analyzing code...",
+                    "success"
+                );
+
+
+                setTimeout(() => {
+
+                    analyzeCode();
+
+                }, 700);
+
+
+                return;
+            }
+        }
 
 
         const linePosition =
@@ -368,7 +334,8 @@ function applyFix(index) {
                 ) +
                 newCode +
                 line.substring(
-                    linePosition + oldCode.length
+                    linePosition +
+                    oldCode.length
                 );
 
 
@@ -378,13 +345,20 @@ function applyFix(index) {
 
             showFixMessage(
                 index,
-                "✓ Fix applied successfully!",
+                "✓ Fix applied successfully! Re-analyzing code...",
                 "success"
             );
 
+
+            setTimeout(() => {
+
+                analyzeCode();
+
+            }, 700);
+
+
             return;
         }
-
     }
 
 
@@ -396,15 +370,7 @@ function applyFix(index) {
 }
 
 
-// ==========================================
-// MESSAGE
-// ==========================================
-
-function showFixMessage(
-    index,
-    message,
-    type
-) {
+function showFixMessage(index, message, type) {
 
     const box =
         document.getElementById(
@@ -417,8 +383,7 @@ function showFixMessage(
     }
 
 
-    box.textContent =
-        message;
+    box.textContent = message;
 
 
     box.className =
@@ -436,17 +401,12 @@ function showFixMessage(
 }
 
 
-// ==========================================
-// HTML ESCAPE
-// ==========================================
-
 function escapeHtml(text) {
 
     if (
         text === undefined ||
         text === null
     ) {
-
         return "";
     }
 
