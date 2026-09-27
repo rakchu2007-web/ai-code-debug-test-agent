@@ -1,169 +1,1152 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Code Debug & Test Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <link rel="stylesheet" href="style.css">
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #1c2330;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #58a6ff;
+      --accent2:   #7c5cd8;
+      --green:     #3fb950;
+      --yellow:    #d29922;
+      --red:       #f85149;
+      --orange:    #f0883e;
+      --radius:    10px;
+    }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    header h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+    header p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .badge {
+      margin-left: auto;
+      background: rgba(88,166,255,.15);
+      color: var(--accent);
+      border: 1px solid rgba(88,166,255,.3);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* ── LAYOUT ── */
+    main { max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .card-title span { font-size: 15px; }
+
+    /* ── FORM ELEMENTS ── */
+    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+
+    select, textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+    }
+    select:focus, textarea:focus { border-color: var(--accent); }
+    select { cursor: pointer; }
+
+    textarea {
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      font-size: 13px;
+      resize: vertical;
+      min-height: 300px;
+      line-height: 1.7;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      border: none; border-radius: 7px;
+      padding: 10px 20px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity .2s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0d1117;
+      width: 100%;
+      justify-content: center;
+      margin-top: 14px;
+      font-size: 15px;
+      padding: 12px;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: .88; }
+
+    .btn-green  { background: var(--green);  color: #0d1117; }
+    .btn-orange { background: var(--orange); color: #0d1117; }
+    .btn-purple { background: var(--accent2); color: #fff; }
+    .btn-sm { padding: 6px 14px; font-size: 12px; }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 3px solid rgba(13,17,23,.4);
+      border-top-color: #0d1117;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── WORKFLOW ── */
+    .workflow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      margin: 6px 0 4px;
+    }
+    .wf-step {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all .3s;
+      white-space: nowrap;
+    }
+    .wf-step.active  { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.08); }
+    .wf-step.done    { border-color: var(--green);  color: var(--green);  background: rgba(63,185,80,.08); }
+    .wf-arrow {
+      color: var(--border);
+      font-size: 18px;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+    .wf-arrow.done { color: var(--green); }
+
+    /* ── STATS ROW ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 700px) { .stats { grid-template-columns: repeat(2,1fr); } }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-card .stat-val {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .stat-card .stat-lbl {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-top: 4px;
+    }
+    .col-red    { color: var(--red); }
+    .col-yellow { color: var(--yellow); }
+    .col-green  { color: var(--green); }
+    .col-accent { color: var(--accent); }
+
+    /* ── SCORE RING ── */
+    .score-ring { position: relative; width: 56px; height: 56px; margin: 0 auto 6px; }
+    .score-ring svg { transform: rotate(-90deg); }
+    .score-ring .ring-bg  { fill: none; stroke: var(--border); stroke-width: 5; }
+    .score-ring .ring-fg  { fill: none; stroke-width: 5; stroke-linecap: round;
+                            stroke-dasharray: 138; stroke-dashoffset: 138;
+                            transition: stroke-dashoffset 1s ease, stroke .4s; }
+    .score-ring .ring-txt {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800;
+    }
+
+    /* ── ISSUE LIST ── */
+    .issue {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      animation: fadeIn .35s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+    .sev-badge {
+      flex-shrink: 0;
+      padding: 3px 9px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .sev-critical { background: rgba(248,81,73,.2);  color: var(--red); }
+    .sev-high     { background: rgba(240,136,62,.2); color: var(--orange); }
+    .sev-medium   { background: rgba(210,153,34,.2); color: var(--yellow); }
+    .sev-low      { background: rgba(63,185,80,.2);  color: var(--green); }
+
+    .issue-body { flex: 1; min-width: 0; }
+    .issue-title { font-weight: 600; font-size: 13.5px; }
+    .issue-meta  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .issue-desc  { font-size: 13px; margin-top: 6px; color: #c9d1d9; }
+
+    /* ── TEST CASES ── */
+    .test-case {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      animation: fadeIn .35s ease;
+    }
+    .test-case-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    }
+    .tc-badge {
+      background: rgba(88,166,255,.15);
+      color: var(--accent);
+      border: 1px solid rgba(88,166,255,.3);
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+    }
+    .test-case pre {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: "Cascadia Code", "Fira Code", monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      color: #c9d1d9;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* ── FIX SUGGESTIONS ── */
+    .fix-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      animation: fadeIn .35s ease;
+    }
+    .fix-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
+    }
+    .fix-title { font-weight: 600; font-size: 13.5px; }
+    .fix-code {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: "Cascadia Code", "Fira Code", monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      color: #c9d1d9;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .fix-explanation { font-size: 13px; margin-top: 8px; color: #c9d1d9; }
+
+    /* ── REPORT ── */
+    .report-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) { .report-grid { grid-template-columns: 1fr; } }
+
+    .report-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .report-item h4 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .report-item p  { font-size: 13px; color: var(--text); }
+
+    /* ── PLACEHOLDER ── */
+    .placeholder {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .placeholder-icon { font-size: 40px; margin-bottom: 10px; opacity: .5; }
+    .placeholder p { font-size: 14px; }
+
+    /* ── TABS ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color .2s, border-color .2s;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 4px;
+      width: 0%;
+      transition: width .5s ease;
+    }
+
+    /* ── DIVIDER ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+    /* ── RESULTS SECTION ── */
+    #results { display: none; }
+    #results.visible { display: block; }
+
+    /* ── ANALYZING OVERLAY ── */
+    .analyzing-bar {
+      background: rgba(88,166,255,.1);
+      border: 1px solid rgba(88,166,255,.25);
+      border-radius: 8px;
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 24px;
+    }
+    .analyzing-bar p { font-size: 13px; color: var(--accent); font-weight: 500; }
+    .analyzing-bar .progress-bar { flex: 1; }
+
+    /* ── COPY BUTTON ── */
+    .copy-btn {
+      font-size: 11px; padding: 3px 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 5px; color: var(--muted); cursor: pointer;
+      transition: color .2s, border-color .2s;
+    }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="container">
+<!-- HEADER -->
+<header>
+  <div class="header-icon">🤖</div>
+  <div>
+    <h1>AI Code Debug &amp; Test Agent</h1>
+    <p>Automated bug detection · test generation · fix suggestions · code analysis</p>
+  </div>
+  <span class="badge">Prototype v1.0</span>
+</header>
 
-  <header class="hero">
-    <div class="robot">🤖</div>
+<main>
 
-    <h1>AI Code Debug & Test Agent</h1>
-
-    <p>
-      Intelligent Code Analysis • Bug Detection • Test Generation
-    </p>
-  </header>
-
-
-  <section class="input-card">
-
-    <h2>💻 Code Analysis</h2>
-
-    <label>Programming Language</label>
-
-    <select id="language">
-      <option value="JavaScript">JavaScript</option>
-      <option value="Python">Python</option>
-      <option value="Java">Java</option>
-    </select>
-
-    <label>Paste Your Source Code</label>
-
-    <textarea
-      id="code"
-      placeholder="// Paste your code here..."
-    ></textarea>
-
-    <button onclick="analyzeCode()">
-      🔍 Analyze Code
-    </button>
-
-  </section>
-
-
-  <div id="loading" class="loading hidden">
-    <div class="loader">🤖</div>
-    <b>AI Agents are analyzing your code...</b>
-    <p>Please wait...</p>
+  <!-- AGENT WORKFLOW VISUALIZATION -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-title"><span>⚡</span> Agent Workflow</div>
+    <div class="workflow" id="workflow">
+      <div class="wf-step" id="wf-0">📥 Source Code</div>
+      <div class="wf-arrow" id="wa-0">→</div>
+      <div class="wf-step" id="wf-1">🐛 Bug Detection</div>
+      <div class="wf-arrow" id="wa-1">→</div>
+      <div class="wf-step" id="wf-2">🧪 Test Generation</div>
+      <div class="wf-arrow" id="wa-2">→</div>
+      <div class="wf-step" id="wf-3">🔧 Fix Suggestion</div>
+      <div class="wf-arrow" id="wa-3">→</div>
+      <div class="wf-step" id="wf-4">📊 Analysis Report</div>
+      <div class="wf-arrow" id="wa-4">→</div>
+      <div class="wf-step" id="wf-5">✅ Results Dashboard</div>
+    </div>
   </div>
 
+  <!-- INPUT AREA -->
+  <div class="grid-2" style="margin-bottom:24px;">
+    <div class="card">
+      <div class="card-title"><span>⚙️</span> Configuration</div>
+      <label for="lang">Programming Language</label>
+      <select id="lang">
+        <option value="javascript">JavaScript</option>
+        <option value="python">Python</option>
+        <option value="java">Java</option>
+        <option value="c">C</option>
+        <option value="cpp">C++</option>
+      </select>
 
-  <section id="results" class="results hidden">
-
-    <h2 class="result-title">📊 Analysis Results</h2>
-
-
-    <div class="summary">
-
-      <div class="summary-card">
-        <span>🐞</span>
-        <h3 id="issueCount">0</h3>
-        <p>Issues Detected</p>
+      <div style="margin-top:16px;">
+        <label>Quick Sample</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-purple" onclick="loadSample('javascript')">JS</button>
+          <button class="btn btn-sm btn-purple" onclick="loadSample('python')">Python</button>
+          <button class="btn btn-sm btn-purple" onclick="loadSample('java')">Java</button>
+          <button class="btn btn-sm btn-purple" onclick="loadSample('c')">C</button>
+          <button class="btn btn-sm btn-purple" onclick="loadSample('cpp')">C++</button>
+        </div>
       </div>
 
-      <div class="summary-card">
-        <span>🧪</span>
-        <h3 id="testCount">0</h3>
-        <p>Test Cases</p>
+      <div style="margin-top:16px;">
+        <label>Analysis Settings</label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;color:var(--text);font-size:13px;">
+            <input type="checkbox" id="chk-bugs"  checked style="accent-color:var(--accent);width:15px;height:15px;"> Bug Detection
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;color:var(--text);font-size:13px;">
+            <input type="checkbox" id="chk-tests" checked style="accent-color:var(--accent);width:15px;height:15px;"> Test Generation
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;color:var(--text);font-size:13px;">
+            <input type="checkbox" id="chk-fixes" checked style="accent-color:var(--accent);width:15px;height:15px;"> Fix Suggestions
+          </label>
+        </div>
       </div>
-
-      <div class="summary-card">
-        <span>🎯</span>
-        <h3 id="scoreValue">0</h3>
-        <p>Code Score</p>
-      </div>
-
     </div>
-
 
     <div class="card">
-
-      <h2>🐞 Bugs & Errors</h2>
-
-      <div id="bugs"></div>
-
+      <div class="card-title"><span>📝</span> Source Code</div>
+      <label for="code">Paste your code below</label>
+      <textarea id="code" placeholder="// Paste your source code here...&#10;// Select a language and click 'Analyze Code'"></textarea>
+      <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()">
+        <span id="btnIcon">🔍</span>
+        <span id="btnText">Analyze Code</span>
+      </button>
     </div>
+  </div>
 
+  <!-- RESULTS SECTION -->
+  <div id="results">
 
-    <div class="card">
-
-      <h2>🧪 Generated Test Cases</h2>
-
-      <div id="tests"></div>
-
-    </div>
-
-
-    <div class="card">
-
-      <h2>🔧 Fix Suggestions</h2>
-
-      <div id="fixes"></div>
-
-    </div>
-
-
-    <div class="card report-card">
-
-      <h2>📊 Analysis Report</h2>
-
-      <div id="report"></div>
-
-    </div>
-
-
-    <div class="workflow">
-
-      <h2>🤖 Agent Workflow</h2>
-
-      <div class="steps">
-
-        <div>
-          <span>1</span>
-          Bug Detection
-        </div>
-
-        <div>→</div>
-
-        <div>
-          <span>2</span>
-          Test Generation
-        </div>
-
-        <div>→</div>
-
-        <div>
-          <span>3</span>
-          Fix Suggestion
-        </div>
-
-        <div>→</div>
-
-        <div>
-          <span>4</span>
-          Report
-        </div>
-
+    <!-- ANALYZING BAR (shown while processing) -->
+    <div class="analyzing-bar" id="analyzingBar" style="display:none;">
+      <div class="spinner"></div>
+      <div style="flex:1;">
+        <p id="analyzeStatus">Initializing agents…</p>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
       </div>
-
     </div>
 
-  </section>
+    <!-- STATS ROW -->
+    <div class="stats" id="statsRow">
+      <div class="stat-card">
+        <div class="score-ring">
+          <svg viewBox="0 0 48 48" width="56" height="56">
+            <circle class="ring-bg" cx="24" cy="24" r="22"/>
+            <circle class="ring-fg" id="scoreRing" cx="24" cy="24" r="22"/>
+          </svg>
+          <div class="ring-txt" id="scoreVal">—</div>
+        </div>
+        <div class="stat-lbl">Code Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val col-red" id="bugCount">—</div>
+        <div class="stat-lbl">Bugs Found</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val col-accent" id="testCount">—</div>
+        <div class="stat-lbl">Tests Generated</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val col-green" id="fixCount">—</div>
+        <div class="stat-lbl">Fixes Available</div>
+      </div>
+    </div>
 
-</div>
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('bugs',this)">🐛 Bugs &amp; Errors</button>
+      <button class="tab" onclick="switchTab('tests',this)">🧪 Test Cases</button>
+      <button class="tab" onclick="switchTab('fixes',this)">🔧 Fix Suggestions</button>
+      <button class="tab" onclick="switchTab('report',this)">📊 Analysis Report</button>
+    </div>
 
+    <!-- BUGS TAB -->
+    <div class="tab-panel active" id="tab-bugs"></div>
 
-<script src="agents.js"></script>
-<script src="app.js"></script>
+    <!-- TESTS TAB -->
+    <div class="tab-panel" id="tab-tests"></div>
 
+    <!-- FIXES TAB -->
+    <div class="tab-panel" id="tab-fixes"></div>
+
+    <!-- REPORT TAB -->
+    <div class="tab-panel" id="tab-report"></div>
+
+  </div>
+
+</main>
+
+<footer>AI Code Debug &amp; Test Agent · College Hackathon Prototype · Built with HTML, CSS &amp; JavaScript</footer>
+
+<script>
+// ─────────────────────────────────────────────
+// SAMPLE CODE SNIPPETS
+// ─────────────────────────────────────────────
+const SAMPLES = {
+  javascript: `function calculateAverage(numbers) {
+  let sum = 0;
+  for (let i = 0; i <= numbers.length; i++) {  // Bug: should be i < numbers.length
+    sum += numbers[i];
+  }
+  return sum / numbers.length;
+}
+
+function getUserData(userId) {
+  const users = null;
+  return users[userId].name;  // Bug: null reference
+}
+
+function divide(a, b) {
+  return a / b;  // Bug: no division-by-zero check
+}
+
+const result = calculateAverage([10, 20, 30]);
+console.log(result);`,
+
+  python: `def calculate_factorial(n):
+    if n == 0:
+        return 1
+    return n * calculate_factorial(n)  # Bug: missing -1, infinite recursion
+
+def read_file(filename):
+    f = open(filename, 'r')   # Bug: file never closed
+    data = f.read()
+    return data
+
+def get_element(lst, index):
+    return lst[index]   # Bug: no bounds checking
+
+def divide(a, b):
+    return a / b   # Bug: ZeroDivisionError possible
+
+print(calculate_factorial(5))`,
+
+  java: `public class Calculator {
+    public static int divide(int a, int b) {
+        return a / b;   // Bug: ArithmeticException when b==0
+    }
+
+    public static String getFirst(String[] arr) {
+        return arr[0].toUpperCase();   // Bug: NullPointerException / ArrayIndexOutOfBounds
+    }
+
+    public static int findMax(int[] nums) {
+        int max = 0;
+        for (int i = 0; i < nums.length; i++) {
+            if (nums[i] > max) max = nums[i];
+        }
+        return max;   // Bug: fails for all-negative arrays
+    }
+
+    public static void main(String[] args) {
+        System.out.println(divide(10, 0));
+    }
+}`,
+
+  c: `#include <stdio.h>
+#include <string.h>
+
+void copyString(char *dest, const char *src) {
+    strcpy(dest, src);   // Bug: no bounds check, buffer overflow possible
+}
+
+int divideNumbers(int a, int b) {
+    return a / b;   // Bug: division by zero
+}
+
+int accessArray(int arr[], int size, int idx) {
+    return arr[idx];   // Bug: no bounds check
+}
+
+int main() {
+    char buf[5];
+    copyString(buf, "This is a very long string!");  // Bug: overflow
+    printf("%s\\n", buf);
+    printf("%d\\n", divideNumbers(10, 0));
+    return 0;
+}`,
+
+  cpp: `#include <iostream>
+#include <vector>
+using namespace std;
+
+class Node {
+public:
+    int data;
+    Node* next;
+    Node(int d) : data(d), next(nullptr) {}
+};
+
+Node* createNode(int val) {
+    Node* n = new Node(val);
+    return n;   // Bug: memory never freed
+}
+
+int getElement(vector<int>& v, int i) {
+    return v[i];   // Bug: no bounds check
+}
+
+void copyData(char* dst, const char* src) {
+    strcpy(dst, src);   // Bug: buffer overflow
+}
+
+int main() {
+    Node* n = createNode(42);
+    vector<int> v = {1,2,3};
+    cout << getElement(v, 10) << endl;  // Bug: out of bounds
+    return 0;
+}`
+};
+
+// ─────────────────────────────────────────────
+// ANALYSIS ENGINE  (rule-based static analysis)
+// ─────────────────────────────────────────────
+
+const RULES = {
+  javascript: [
+    { pattern: /for\s*\(.*<=\s*\w+\.length/g, title: "Off-by-One Error", desc: "Loop uses `<= length` instead of `< length`, causing access to `undefined` on the last iteration.", sev: "critical" },
+    { pattern: /=\s*null[;\n][\s\S]{0,80}\[\w+\]/g, title: "Null Reference Dereference", desc: "A variable is set to `null` then immediately indexed or accessed, which will throw a TypeError at runtime.", sev: "critical" },
+    { pattern: /return\s+\w+\s*\/\s*\w+/g, title: "Division Without Zero Guard", desc: "Division operation has no guard for divisor being zero.", sev: "high" },
+    { pattern: /var\s+\w+/g, title: "Use of `var` Declaration", desc: "Prefer `let` or `const` over `var` to avoid hoisting and scope issues.", sev: "low" },
+    { pattern: /==(?!=)/g, title: "Loose Equality (`==`)", desc: "Use strict equality `===` to avoid unexpected type coercion.", sev: "medium" },
+    { pattern: /console\.log/g, title: "Debug Statement Left in Code", desc: "`console.log` should be removed before production.", sev: "low" },
+  ],
+  python: [
+    { pattern: /def\s+\w+\(.*\):\s*\n(?:[ \t]+.*\n)*[ \t]+return\s+\w+\s*\*\s*\w+\(\s*\w+\s*\)/g, title: "Missing Base Case Decrement", desc: "Recursive call passes the same argument — likely missing `-1`, causing infinite recursion.", sev: "critical" },
+    { pattern: /open\s*\([^)]+\)(?![\s\S]{0,200}close\()/g, title: "File Handle Not Closed", desc: "File is opened but `close()` is never called. Use `with open(...)` to ensure proper cleanup.", sev: "high" },
+    { pattern: /return\s+\w+\[\w+\]/g, title: "No Bounds Check on List Access", desc: "Direct index access with no validation may raise `IndexError`.", sev: "medium" },
+    { pattern: /return\s+\w+\s*\/\s*\w+/g, title: "Division Without Zero Guard", desc: "Division by zero will raise `ZeroDivisionError`.", sev: "high" },
+    { pattern: /print\s*\(/g, title: "Debug Print Statement", desc: "Remove or replace `print()` calls before shipping.", sev: "low" },
+  ],
+  java: [
+    { pattern: /return\s+\w+\s*\/\s*\w+/g, title: "ArithmeticException Risk", desc: "Integer division without a zero check throws `ArithmeticException`.", sev: "critical" },
+    { pattern: /\[\s*0\s*\]\s*\.\s*\w+/g, title: "Potential NullPointerException", desc: "Accessing the first element of an array without null or length check.", sev: "critical" },
+    { pattern: /int\s+max\s*=\s*0/g, title: "Incorrect Max Initialization", desc: "Initializing `max` to `0` fails for arrays containing only negative values. Use `Integer.MIN_VALUE`.", sev: "high" },
+    { pattern: /System\.out\.println/g, title: "Debug Println Statement", desc: "Remove `System.out.println` statements before production.", sev: "low" },
+  ],
+  c: [
+    { pattern: /strcpy\s*\(/g, title: "Buffer Overflow via `strcpy`", desc: "`strcpy` performs no bounds checking. Use `strncpy` or `strlcpy`.", sev: "critical" },
+    { pattern: /return\s+\w+\s*\/\s*\w+/g, title: "Division by Zero Risk", desc: "No guard before dividing — undefined behavior if divisor is zero.", sev: "critical" },
+    { pattern: /return\s+\w+\[\w+\]/g, title: "Unchecked Array Index", desc: "Array access without bounds validation causes undefined behavior.", sev: "high" },
+    { pattern: /printf\s*\(/g, title: "Debug Printf Statement", desc: "Ensure `printf` calls are intentional and not debug leftovers.", sev: "low" },
+  ],
+  cpp: [
+    { pattern: /new\s+\w+\s*\(/g, title: "Memory Leak — `new` Without `delete`", desc: "Heap allocation with `new` has no corresponding `delete`. Use smart pointers (`unique_ptr`).", sev: "critical" },
+    { pattern: /strcpy\s*\(/g, title: "Buffer Overflow via `strcpy`", desc: "`strcpy` performs no bounds checking. Use `std::string` or `strncpy`.", sev: "critical" },
+    { pattern: /\w+\[\s*\d{2,}\s*\]/g, title: "Out-of-Bounds Vector/Array Access", desc: "Accessing a large literal index on a small container causes undefined behavior.", sev: "critical" },
+    { pattern: /cout\s*<</g, title: "Debug Output Statement", desc: "Ensure `cout` statements are intentional, not debug leftovers.", sev: "low" },
+  ]
+};
+
+const TEST_TEMPLATES = {
+  javascript: (bugs) => {
+    const tests = [
+      { name: "Normal Input Test", code: `// Test: calculateAverage with valid array\nconst nums = [10, 20, 30];\nconsole.assert(calculateAverage(nums) === 20, "Average should be 20");` },
+      { name: "Edge Case — Empty Array", code: `// Test: calculateAverage with empty array\nconst empty = [];\ntry { calculateAverage(empty); } catch(e) { console.log("Caught:", e.message); }` },
+      { name: "Null / Undefined Input", code: `// Test: function receives null\ntry { getUserData(0); } catch(e) { console.assert(e instanceof TypeError, "Should throw TypeError"); }` },
+      { name: "Division by Zero Guard", code: `// Test: divide by zero\nconsole.assert(!isFinite(divide(5, 0)) || divide(5, 0) === Infinity, "Division by zero should not throw, result is Infinity");` },
+      { name: "Boundary Value Test", code: `// Test: boundary index\nconst arr = [1,2,3];\nconsole.assert(calculateAverage([arr[0]]) === 1, "Single-element average");` },
+    ];
+    return tests;
+  },
+  python: (bugs) => [
+    { name: "Factorial Base Case", code: `# Test: factorial(0) and factorial(1)\nassert calculate_factorial(0) == 1, "factorial(0) must be 1"\nassert calculate_factorial(1) == 1, "factorial(1) must be 1"` },
+    { name: "Factorial Positive Number", code: `# Test: factorial(5)\nassert calculate_factorial(5) == 120, "factorial(5) must be 120"` },
+    { name: "Division by Zero", code: `# Test: divide(10, 0)\ntry:\n    divide(10, 0)\n    assert False, "Should raise ZeroDivisionError"\nexcept ZeroDivisionError:\n    pass` },
+    { name: "List Index Out of Range", code: `# Test: get_element with invalid index\ntry:\n    get_element([1,2,3], 10)\n    assert False, "Should raise IndexError"\nexcept IndexError:\n    pass` },
+    { name: "File Not Found Handling", code: `# Test: read_file with missing file\ntry:\n    read_file("nonexistent.txt")\nexcept FileNotFoundError as e:\n    print("Handled:", e)` },
+  ],
+  java: (bugs) => [
+    { name: "Normal Division", code: `// Test: divide(10, 2)\nSystem.out.println(Calculator.divide(10, 2));  // Expected: 5` },
+    { name: "Division by Zero", code: `// Test: divide(5, 0)\ntry {\n    Calculator.divide(5, 0);\n} catch (ArithmeticException e) {\n    System.out.println("Caught ArithmeticException");\n}` },
+    { name: "Null Array Element", code: `// Test: getFirst with null element\nString[] arr = {null};\ntry {\n    Calculator.getFirst(arr);\n} catch (NullPointerException e) {\n    System.out.println("Caught NullPointerException");\n}` },
+    { name: "FindMax Negative Array", code: `// Test: findMax with all-negative values\nint[] neg = {-3, -1, -4};\nSystem.out.println(Calculator.findMax(neg));  // Expected: -1` },
+    { name: "Empty Array Guard", code: `// Test: getFirst with empty array\ntry {\n    Calculator.getFirst(new String[]{});\n} catch (ArrayIndexOutOfBoundsException e) {\n    System.out.println("Caught ArrayIndexOutOfBoundsException");\n}` },
+  ],
+  c: (bugs) => [
+    { name: "Safe String Copy", code: `// Test: safe copy with bounded destination\nchar dst[10];\nstrncpy(dst, "Hello", sizeof(dst)-1);\ndst[sizeof(dst)-1] = '\\0';\nprintf("%s\\n", dst);  // Expected: Hello` },
+    { name: "Division by Zero Guard", code: `// Test: guard before dividing\nint b = 0;\nif (b != 0) printf("%d\\n", divideNumbers(10, b));\nelse printf("Division by zero prevented\\n");` },
+    { name: "Bounds-Checked Array Access", code: `// Test: check index before access\nint arr[] = {1,2,3};\nint idx = 5, size = 3;\nif (idx < size) printf("%d\\n", arr[idx]);\nelse printf("Index out of bounds\\n");` },
+    { name: "Buffer Size Validation", code: `// Test: verify string fits in buffer\nconst char *src = "Short";\nchar buf[10];\nif (strlen(src) < sizeof(buf)) strcpy(buf, src);\nelse printf("String too long\\n");` },
+  ],
+  cpp: (bugs) => [
+    { name: "Smart Pointer — No Leak", code: `// Test: use unique_ptr instead of raw new\n#include <memory>\nauto n = std::make_unique<Node>(42);\nstd::cout << n->data << std::endl;  // Node auto-deleted` },
+    { name: "Vector Bounds Check", code: `// Test: safe vector access\nvector<int> v = {1,2,3};\nint idx = 10;\nif (idx < (int)v.size()) cout << v[idx];\nelse cout << "Out of bounds" << endl;` },
+    { name: "std::string Instead of strcpy", code: `// Test: use std::string\nstd::string src = "Safe string";\nstd::string dst = src;\nstd::cout << dst << std::endl;` },
+    { name: "Memory Allocation Failure", code: `// Test: new throws std::bad_alloc on failure\ntry {\n    Node* n = new Node(1);\n    delete n;\n} catch (std::bad_alloc& e) {\n    std::cerr << "Allocation failed: " << e.what();\n}` },
+  ],
+};
+
+const FIX_SUGGESTIONS = {
+  javascript: [
+    { title: "Fix Off-by-One: use `< length`", explanation: "Change `<=` to `<` in the loop condition so the last valid index is not exceeded.", code: `// BEFORE:\nfor (let i = 0; i <= numbers.length; i++)\n\n// AFTER:\nfor (let i = 0; i < numbers.length; i++)` },
+    { title: "Null Guard Before Property Access", explanation: "Check that the object is not null before accessing its properties.", code: `// BEFORE:\nreturn users[userId].name;\n\n// AFTER:\nif (!users || !users[userId]) return null;\nreturn users[userId].name;` },
+    { title: "Division by Zero Guard", explanation: "Return early or throw when the divisor is zero.", code: `// BEFORE:\nreturn a / b;\n\n// AFTER:\nif (b === 0) throw new Error("Division by zero");\nreturn a / b;` },
+  ],
+  python: [
+    { title: "Fix Infinite Recursion — Add `n - 1`", explanation: "The recursive call must decrement `n` to reach the base case.", code: `# BEFORE:\nreturn n * calculate_factorial(n)\n\n# AFTER:\nreturn n * calculate_factorial(n - 1)` },
+    { title: "Use `with` Statement for File I/O", explanation: "`with open(...)` guarantees the file is closed even if an exception occurs.", code: `# BEFORE:\nf = open(filename, 'r')\ndata = f.read()\nreturn data\n\n# AFTER:\nwith open(filename, 'r') as f:\n    return f.read()` },
+    { title: "Division by Zero Guard", explanation: "Check divisor before dividing.", code: `# BEFORE:\nreturn a / b\n\n# AFTER:\nif b == 0:\n    raise ValueError("Cannot divide by zero")\nreturn a / b` },
+  ],
+  java: [
+    { title: "Guard Integer Division", explanation: "Check divisor before performing integer division to avoid `ArithmeticException`.", code: `// BEFORE:\nreturn a / b;\n\n// AFTER:\nif (b == 0) throw new ArithmeticException("Divisor is zero");\nreturn a / b;` },
+    { title: "Null & Length Check Before Array Access", explanation: "Validate the array is non-null and non-empty before accessing index 0.", code: `// BEFORE:\nreturn arr[0].toUpperCase();\n\n// AFTER:\nif (arr == null || arr.length == 0 || arr[0] == null) return "";\nreturn arr[0].toUpperCase();` },
+    { title: "Initialize `max` to `Integer.MIN_VALUE`", explanation: "Using `Integer.MIN_VALUE` guarantees the first element always replaces it.", code: `// BEFORE:\nint max = 0;\n\n// AFTER:\nint max = Integer.MIN_VALUE;` },
+  ],
+  c: [
+    { title: "Replace `strcpy` with `strncpy`", explanation: "`strncpy` limits the number of copied bytes, preventing buffer overflow.", code: `/* BEFORE: */\nstrcpy(dest, src);\n\n/* AFTER: */\nstrncpy(dest, src, sizeof(dest) - 1);\ndest[sizeof(dest) - 1] = '\\0';` },
+    { title: "Division by Zero Guard", explanation: "Check divisor at runtime.", code: `/* BEFORE: */\nreturn a / b;\n\n/* AFTER: */\nif (b == 0) { fprintf(stderr, "Error: division by zero\\n"); return -1; }\nreturn a / b;` },
+    { title: "Bounds-Checked Array Access", explanation: "Validate index against array size before accessing.", code: `/* BEFORE: */\nreturn arr[idx];\n\n/* AFTER: */\nif (idx < 0 || idx >= size) { fprintf(stderr, "Index out of bounds\\n"); return -1; }\nreturn arr[idx];` },
+  ],
+  cpp: [
+    { title: "Replace `new` with `std::make_unique`", explanation: "`unique_ptr` automatically frees memory when it goes out of scope.", code: `// BEFORE:\nNode* n = new Node(val);\nreturn n;\n\n// AFTER:\n#include <memory>\nstd::unique_ptr<Node> createNode(int val) {\n    return std::make_unique<Node>(val);\n}` },
+    { title: "Bounds-Checked Vector Access", explanation: "Use `.at()` which throws `std::out_of_range`, or check index manually.", code: `// BEFORE:\nreturn v[i];\n\n// AFTER:\nif (i < 0 || i >= (int)v.size()) throw std::out_of_range("Index out of bounds");\nreturn v[i];` },
+    { title: "Replace `strcpy` with `std::string`", explanation: "`std::string` handles memory automatically and eliminates buffer overflows.", code: `// BEFORE:\nvoid copyData(char* dst, const char* src) { strcpy(dst, src); }\n\n// AFTER:\nstd::string copyData(const std::string& src) { return src; }` },
+  ],
+};
+
+// ─────────────────────────────────────────────
+// CORE ANALYSIS FUNCTION
+// ─────────────────────────────────────────────
+let currentState = { lang: '', bugs: [], tests: [], fixes: [], score: 0 };
+
+function analyze() {
+  const code = document.getElementById('code').value.trim();
+  const lang = document.getElementById('lang').value;
+  if (!code) { alert('Please paste some source code first.'); return; }
+
+  const doBugs  = document.getElementById('chk-bugs').checked;
+  const doTests = document.getElementById('chk-tests').checked;
+  const doFixes = document.getElementById('chk-fixes').checked;
+
+  // Reset UI
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('analyzingBar').style.display = 'flex';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('btnIcon').textContent = '';
+  document.getElementById('btnText').textContent = 'Analyzing…';
+  document.getElementById('btnIcon').innerHTML = '<div class="spinner"></div>';
+
+  resetStats();
+  clearTabs();
+  resetWorkflow();
+
+  const steps = [
+    { id: 0, label: '📥 Loading source code…', prog: 10 },
+    { id: 1, label: '🐛 Running bug detection agent…', prog: 35 },
+    { id: 2, label: '🧪 Generating test cases…', prog: 60 },
+    { id: 3, label: '🔧 Building fix suggestions…', prog: 82 },
+    { id: 4, label: '📊 Generating analysis report…', prog: 95 },
+    { id: 5, label: '✅ Finalizing results…', prog: 100 },
+  ];
+
+  let step = 0;
+  function runStep() {
+    if (step >= steps.length) {
+      finalize(code, lang, doBugs, doTests, doFixes);
+      return;
+    }
+    const s = steps[step];
+    setWorkflowStep(s.id);
+    document.getElementById('analyzeStatus').textContent = s.label;
+    document.getElementById('progressFill').style.width = s.prog + '%';
+    step++;
+    setTimeout(runStep, 420 + Math.random() * 180);
+  }
+  setTimeout(runStep, 100);
+}
+
+function finalize(code, lang, doBugs, doTests, doFixes) {
+  const bugs  = doBugs  ? detectBugs(code, lang)     : [];
+  const tests = doTests ? generateTests(lang, bugs)  : [];
+  const fixes = doFixes ? getFixes(lang)              : [];
+  const score = computeScore(bugs);
+
+  currentState = { lang, bugs, tests, fixes, score };
+
+  // Hide progress bar
+  document.getElementById('analyzingBar').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('btnIcon').textContent = '🔍';
+  document.getElementById('btnText').textContent = 'Re-analyze';
+
+  // Stats
+  setScore(score);
+  document.getElementById('bugCount').textContent  = bugs.length;
+  document.getElementById('testCount').textContent = tests.length;
+  document.getElementById('fixCount').textContent  = fixes.length;
+
+  // Tabs
+  renderBugs(bugs);
+  renderTests(tests);
+  renderFixes(fixes, code);
+  renderReport(bugs, tests, fixes, score, lang, code);
+
+  markWorkflowDone();
+}
+
+// ─────────────────────────────────────────────
+// DETECTION HELPERS
+// ─────────────────────────────────────────────
+function detectBugs(code, lang) {
+  const rules = RULES[lang] || [];
+  const found = [];
+  rules.forEach(rule => {
+    const regex = new RegExp(rule.pattern.source, 'g');
+    let match;
+    while ((match = regex.exec(code)) !== null) {
+      const line = code.substring(0, match.index).split('\n').length;
+      found.push({ title: rule.title, desc: rule.desc, sev: rule.sev, line });
+    }
+  });
+  // Deduplicate by title
+  const seen = new Set();
+  return found.filter(b => { if (seen.has(b.title)) return false; seen.add(b.title); return true; });
+}
+
+function generateTests(lang, bugs) {
+  return (TEST_TEMPLATES[lang] || (() => []))(bugs);
+}
+
+function getFixes(lang) {
+  return FIX_SUGGESTIONS[lang] || [];
+}
+
+function computeScore(bugs) {
+  let penalty = 0;
+  bugs.forEach(b => {
+    if (b.sev === 'critical') penalty += 22;
+    else if (b.sev === 'high') penalty += 12;
+    else if (b.sev === 'medium') penalty += 6;
+    else penalty += 2;
+  });
+  return Math.max(10, 100 - penalty);
+}
+
+// ─────────────────────────────────────────────
+// RENDER HELPERS
+// ─────────────────────────────────────────────
+function renderBugs(bugs) {
+  const el = document.getElementById('tab-bugs');
+  if (!bugs.length) {
+    el.innerHTML = placeholder('🎉', 'No bugs detected — or bug detection was disabled.');
+    return;
+  }
+  el.innerHTML = bugs.map((b, i) => `
+    <div class="issue">
+      <span class="sev-badge sev-${b.sev}">${b.sev}</span>
+      <div class="issue-body">
+        <div class="issue-title">${escHtml(b.title)}</div>
+        <div class="issue-meta">Line ~${b.line} · ${capitalize(b.sev)} severity</div>
+        <div class="issue-desc">${escHtml(b.desc)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTests(tests) {
+  const el = document.getElementById('tab-tests');
+  if (!tests.length) {
+    el.innerHTML = placeholder('🧪', 'No test cases generated — or test generation was disabled.');
+    return;
+  }
+  el.innerHTML = tests.map((t, i) => `
+    <div class="test-case">
+      <div class="test-case-header">
+        <span class="tc-badge">TC-${String(i+1).padStart(2,'0')}</span>
+        <strong style="font-size:13px;">${escHtml(t.name)}</strong>
+        <button class="copy-btn" onclick="copyText(this, \`${escAttr(t.code)}\`)">Copy</button>
+      </div>
+      <pre>${escHtml(t.code)}</pre>
+    </div>
+  `).join('');
+}
+
+function renderFixes(fixes, originalCode) {
+  const el = document.getElementById('tab-fixes');
+  if (!fixes.length) {
+    el.innerHTML = placeholder('🔧', 'No fix suggestions available — or fix generation was disabled.');
+    return;
+  }
+  el.innerHTML = fixes.map((f, i) => `
+    <div class="fix-card">
+      <div class="fix-header">
+        <span class="fix-title">🔧 ${escHtml(f.title)}</span>
+        <button class="btn btn-sm btn-green" onclick="applyFix(${i})">✅ Apply Fix</button>
+      </div>
+      <div class="fix-code">${escHtml(f.code)}</div>
+      <div class="fix-explanation">${escHtml(f.explanation)}</div>
+    </div>
+  `).join('');
+}
+
+function renderReport(bugs, tests, fixes, score, lang, code) {
+  const sevCounts = { critical:0, high:0, medium:0, low:0 };
+  bugs.forEach(b => sevCounts[b.sev]++);
+  const lines = code.split('\n').length;
+  const grade = score >= 80 ? 'B+' : score >= 65 ? 'C' : score >= 50 ? 'D' : 'F';
+  const gradeLabel = score >= 80 ? 'Good' : score >= 65 ? 'Needs Work' : score >= 50 ? 'Poor' : 'Critical';
+
+  document.getElementById('tab-report').innerHTML = `
+    <div class="report-grid">
+      <div class="report-item"><h4>Language</h4><p>${capitalize(lang === 'cpp' ? 'C++' : lang === 'c' ? 'C' : lang)}</p></div>
+      <div class="report-item"><h4>Lines of Code</h4><p>${lines}</p></div>
+      <div class="report-item"><h4>Code Quality</h4><p>${score}/100 — ${gradeLabel} (${grade})</p></div>
+      <div class="report-item"><h4>Total Issues</h4><p>${bugs.length} issue${bugs.length !== 1 ? 's' : ''} found</p></div>
+      <div class="report-item"><h4>Critical Bugs</h4><p style="color:var(--red)">${sevCounts.critical}</p></div>
+      <div class="report-item"><h4>High Severity</h4><p style="color:var(--orange)">${sevCounts.high}</p></div>
+      <div class="report-item"><h4>Medium Severity</h4><p style="color:var(--yellow)">${sevCounts.medium}</p></div>
+      <div class="report-item"><h4>Low Severity</h4><p style="color:var(--green)">${sevCounts.low}</p></div>
+      <div class="report-item"><h4>Tests Generated</h4><p>${tests.length}</p></div>
+      <div class="report-item"><h4>Fixes Available</h4><p>${fixes.length}</p></div>
+      <div class="report-item" style="grid-column:1/-1;"><h4>Recommendation</h4>
+        <p>${getRecommendation(score, sevCounts)}</p>
+      </div>
+    </div>
+  `;
+}
+
+function getRecommendation(score, sev) {
+  if (sev.critical > 0) return `${sev.critical} critical bug(s) must be fixed before deployment. Review all critical issues, apply the suggested fixes, and re-run the analysis.`;
+  if (sev.high > 0)     return `${sev.high} high-severity issue(s) detected. Address these before code review to avoid runtime failures.`;
+  if (score >= 80)      return 'Code quality is good. Consider addressing low-severity issues for best practices compliance.';
+  return 'Multiple medium/low issues found. Refactor the affected areas and run tests to validate correctness.';
+}
+
+// ─────────────────────────────────────────────
+// APPLY FIX
+// ─────────────────────────────────────────────
+function applyFix(idx) {
+  const fix = currentState.fixes[idx];
+  if (!fix) return;
+  const afterBlock = fix.code.split('// AFTER:').pop().split('# AFTER:').pop().split('/* AFTER: */').pop().trim();
+  const textarea = document.getElementById('code');
+  const current = textarea.value;
+
+  // Attempt to find and replace the BEFORE section
+  const beforeMatch = fix.code.match(/(?:\/\/ BEFORE:|# BEFORE:|\/\* BEFORE: \*\/)\n([\s\S]+?)(?:\n\n|$)/);
+  if (beforeMatch) {
+    const beforeCode = beforeMatch[1].trim();
+    if (current.includes(beforeCode)) {
+      const afterMatch = fix.code.match(/(?:\/\/ AFTER:|# AFTER:|\/\* AFTER: \*\/)\n([\s\S]+?)(?:\n\n|$)/);
+      if (afterMatch) {
+        textarea.value = current.replace(beforeCode, afterMatch[1].trim());
+        flashTextarea();
+        return;
+      }
+    }
+  }
+
+  // Fallback: show the fix in a tooltip-style message
+  const btn = document.querySelectorAll('.btn-green')[idx];
+  if (btn) {
+    btn.textContent = '✅ Applied!';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = '✅ Apply Fix'; btn.disabled = false; }, 2500);
+  }
+  alert(`Fix applied (manual review needed):\n\n${fix.code}`);
+}
+
+function flashTextarea() {
+  const ta = document.getElementById('code');
+  ta.style.borderColor = 'var(--green)';
+  ta.style.boxShadow = '0 0 0 3px rgba(63,185,80,.25)';
+  setTimeout(() => { ta.style.borderColor = ''; ta.style.boxShadow = ''; }, 1200);
+}
+
+// ─────────────────────────────────────────────
+// SCORE RING
+// ─────────────────────────────────────────────
+function setScore(score) {
+  const ring = document.getElementById('scoreRing');
+  const val  = document.getElementById('scoreVal');
+  const circumference = 2 * Math.PI * 22; // r=22 → ~138.2
+  const offset = circumference - (score / 100) * circumference;
+  ring.style.strokeDashoffset = offset;
+  const color = score >= 80 ? '#3fb950' : score >= 60 ? '#d29922' : '#f85149';
+  ring.style.stroke = color;
+  val.textContent = score;
+  val.style.color = color;
+}
+
+function resetStats() {
+  ['bugCount','testCount','fixCount'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('scoreVal').textContent = '—';
+  document.getElementById('scoreRing').style.strokeDashoffset = '138';
+}
+
+// ─────────────────────────────────────────────
+// WORKFLOW STEPS
+// ─────────────────────────────────────────────
+function resetWorkflow() {
+  for (let i = 0; i <= 5; i++) {
+    const el = document.getElementById('wf-' + i);
+    if (el) { el.classList.remove('active','done'); }
+  }
+  for (let i = 0; i <= 4; i++) {
+    const el = document.getElementById('wa-' + i);
+    if (el) el.classList.remove('done');
+  }
+}
+function setWorkflowStep(idx) {
+  for (let i = 0; i < idx; i++) {
+    const el = document.getElementById('wf-' + i);
+    if (el) { el.classList.remove('active'); el.classList.add('done'); }
+    const ar = document.getElementById('wa-' + i);
+    if (ar) ar.classList.add('done');
+  }
+  const active = document.getElementById('wf-' + idx);
+  if (active) { active.classList.remove('done'); active.classList.add('active'); }
+}
+function markWorkflowDone() {
+  for (let i = 0; i <= 5; i++) {
+    const el = document.getElementById('wf-' + i);
+    if (el) { el.classList.remove('active'); el.classList.add('done'); }
+  }
+  for (let i = 0; i <= 4; i++) {
+    const ar = document.getElementById('wa-' + i);
+    if (ar) ar.classList.add('done');
+  }
+}
+
+// ─────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function clearTabs() {
+  ['bugs','tests','fixes','report'].forEach(id => {
+    document.getElementById('tab-' + id).innerHTML = '';
+  });
+}
+
+// ─────────────────────────────────────────────
+// SAMPLE LOADER
+// ─────────────────────────────────────────────
+function loadSample(lang) {
+  document.getElementById('lang').value = lang;
+  document.getElementById('code').value = SAMPLES[lang] || '';
+}
+
+// ─────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$');
+}
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function placeholder(icon, msg) {
+  return `<div class="placeholder"><div class="placeholder-icon">${icon}</div><p>${msg}</p></div>`;
+}
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+
+// Auto-load JS sample on page load
+window.addEventListener('DOMContentLoaded', () => {
+  loadSample('javascript');
+});
+</script>
 </body>
 </html>
