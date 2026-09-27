@@ -1,154 +1,465 @@
+let currentAnalysis = null;
+
+
+// ==========================================
+// ANALYZE CODE
+// ==========================================
+
 function analyzeCode() {
 
-  const code = document.getElementById("code").value;
-  const language = document.getElementById("language").value;
+    const code =
+        document.getElementById("codeInput").value;
 
-  if (!code.trim()) {
-    alert("Please paste source code first!");
-    return;
-  }
+    const language =
+        document.getElementById("language").value;
 
-  document.getElementById("loading")
-    .classList.remove("hidden");
 
-  document.getElementById("results")
-    .classList.add("hidden");
+    if (!code.trim()) {
 
-  setTimeout(function() {
+        alert("Please enter some code.");
 
-    const bugs =
-      bugDetectionAgent(code, language);
+        return;
+    }
 
-    const tests =
-      testGenerationAgent(code, language);
 
-    const fixes =
-      fixSuggestionAgent(bugs);
+    document.getElementById("loading").style.display = "block";
 
-    const report =
-      reportAgent(bugs, tests);
+    document.getElementById("results").style.display = "none";
 
-    displayBugs(bugs);
-    displayTests(tests);
+
+    setTimeout(() => {
+
+        const bugs =
+            bugDetectionAgent(code, language);
+
+        const tests =
+            testGenerationAgent(code, language);
+
+        const fixes =
+            fixSuggestionAgent(code, language, bugs);
+
+        const report =
+            reportAgent(bugs, tests);
+
+
+        currentAnalysis = {
+            bugs: bugs,
+            tests: tests,
+            fixes: fixes,
+            report: report
+        };
+
+
+        displayResults(
+            bugs,
+            tests,
+            fixes,
+            report
+        );
+
+
+        document.getElementById("loading").style.display = "none";
+
+        document.getElementById("results").style.display = "block";
+
+    }, 500);
+}
+
+
+// ==========================================
+// DISPLAY RESULTS
+// ==========================================
+
+function displayResults(
+    bugs,
+    tests,
+    fixes,
+    report
+) {
+
+    document.getElementById("issueCount").textContent =
+        bugs.length;
+
+    document.getElementById("testCount").textContent =
+        tests.length;
+
+    document.getElementById("score").textContent =
+        report.score + "/100";
+
+
+    // Bugs
+
+    const bugBox =
+        document.getElementById("bugResults");
+
+
+    if (bugs.length === 0) {
+
+        bugBox.innerHTML = `
+            <div class="success-box">
+                ✓ No major issues detected.
+            </div>
+        `;
+
+    } else {
+
+        bugBox.innerHTML = bugs.map(bug => `
+
+            <div class="bug-card ${bug.severity.toLowerCase()}">
+
+                <strong>
+                    ${escapeHtml(bug.title)}
+                </strong>
+
+                <p>
+                    ${escapeHtml(bug.message)}
+                </p>
+
+                <span>
+                    Line ${bug.line}
+                </span>
+
+            </div>
+
+        `).join("");
+
+    }
+
+
+    // Tests
+
+    document.getElementById("testResults").innerHTML =
+        tests.map(test => `
+
+            <div class="test-card">
+
+                <strong>
+                    ${escapeHtml(test.name)}
+                </strong>
+
+                <p>
+                    ${escapeHtml(test.description)}
+                </p>
+
+            </div>
+
+        `).join("");
+
+
+    // Fixes
+
     displayFixes(fixes);
-    displayReport(report);
-
-    document.getElementById("loading")
-      .classList.add("hidden");
-
-    document.getElementById("results")
-      .classList.remove("hidden");
-
-  }, 1000);
-}
 
 
-function displayBugs(bugs) {
+    // Report
 
-  const box = document.getElementById("bugs");
+    document.getElementById("reportResults").innerHTML = `
 
-  box.innerHTML = "";
+        <div class="report-box">
 
-  bugs.forEach(function(bug) {
+            <h3>Analysis Report</h3>
 
-    const className =
-      bug.severity === "Good" ? "fix" : "issue";
+            <p>
+                <strong>Code Score:</strong>
+                ${report.score}/100
+            </p>
 
-    box.innerHTML += `
-      <div class="${className}">
-        <strong>${bug.severity}</strong>
-        <p>${bug.message}</p>
-      </div>
+            <p>
+                <strong>Issues Detected:</strong>
+                ${bugs.length}
+            </p>
+
+            <p>
+                <strong>Test Cases Generated:</strong>
+                ${tests.length}
+            </p>
+
+            <p>
+                ${escapeHtml(report.summary)}
+            </p>
+
+        </div>
+
     `;
-
-  });
 }
 
 
-function displayTests(tests) {
-
-  const box = document.getElementById("tests");
-
-  box.innerHTML = "";
-
-  tests.forEach(function(test, index) {
-
-    box.innerHTML += `
-      <div class="test">
-        <strong>
-          Test Case ${index + 1}: ${test.name}
-        </strong>
-
-        <p>
-          <b>Input:</b> ${test.input}
-        </p>
-
-        <p>
-          <b>Expected:</b> ${test.expected}
-        </p>
-      </div>
-    `;
-
-  });
-}
-
+// ==========================================
+// FIX DISPLAY
+// ==========================================
 
 function displayFixes(fixes) {
 
-  const box = document.getElementById("fixes");
+    const fixBox =
+        document.getElementById("fixResults");
 
-  box.innerHTML = "";
 
-  fixes.forEach(function(fix) {
+    if (fixes.length === 0) {
 
-    box.innerHTML += `
-      <div class="fix">
+        fixBox.innerHTML = `
+            <div class="success-box">
+                ✓ No fixes required.
+            </div>
+        `;
 
-        <strong>
-          🔧 ${fix.title}
-        </strong>
+        return;
+    }
 
-        <p>
-          ${fix.suggestion}
-        </p>
 
-      </div>
-    `;
+    fixBox.innerHTML = fixes.map((fix, index) => `
 
-  });
+        <div class="fix-card">
+
+            <h3>
+                🔧 ${escapeHtml(fix.title)}
+            </h3>
+
+            <p>
+                <strong>Issue:</strong>
+                ${escapeHtml(fix.message)}
+            </p>
+
+            <p>
+                <strong>Location:</strong>
+                Line ${fix.line}
+            </p>
+
+            <h4>
+                Recommended Change
+            </h4>
+
+            <div class="code-diff">
+
+                <div class="old-code">
+                    − ${escapeHtml(fix.oldCode)}
+                </div>
+
+                <div class="new-code">
+                    + ${escapeHtml(fix.newCode)}
+                </div>
+
+            </div>
+
+            <p class="recommendation">
+
+                <strong>Recommendation:</strong>
+
+                ${escapeHtml(fix.recommendation)}
+
+            </p>
+
+            <p>
+                <strong>Confidence:</strong>
+                ${escapeHtml(fix.confidence)}
+            </p>
+
+
+            <button
+                class="apply-btn"
+                onclick="applyFix(${index})">
+
+                ✓ Apply Fix
+
+            </button>
+
+
+            <div
+                id="fixMessage${index}"
+                class="fix-message">
+            </div>
+
+        </div>
+
+    `).join("");
 }
 
 
-function displayReport(report) {
+// ==========================================
+// APPLY FIX
+// ==========================================
 
-  const box = document.getElementById("report");
+function applyFix(index) {
 
-  box.innerHTML = `
+    if (
+        !currentAnalysis ||
+        !currentAnalysis.fixes ||
+        !currentAnalysis.fixes[index]
+    ) {
 
-    <div class="score">
-      ${report.score}/100
-    </div>
+        return;
+    }
 
-    <p>
-      🐞 Issues detected:
-      <b>${report.issues}</b>
-    </p>
 
-    <p>
-      🧪 Test cases generated:
-      <b>${report.tests}</b>
-    </p>
+    const fix =
+        currentAnalysis.fixes[index];
 
-    <hr>
 
-    <p>
-      🤖 Analysis workflow completed:
-    </p>
+    const textarea =
+        document.getElementById("codeInput");
 
-    <p>1️⃣ Bug Detection Agent</p>
-    <p>2️⃣ Test Generation Agent</p>
-    <p>3️⃣ Fix Suggestion Agent</p>
-    <p>4️⃣ Report Agent</p>
 
-  `;
+    let source =
+        textarea.value;
+
+
+    const oldCode =
+        fix.oldCode;
+
+
+    const newCode =
+        fix.newCode;
+
+
+    // Find exact text
+
+    const position =
+        source.indexOf(oldCode);
+
+
+    if (position !== -1) {
+
+        textarea.value =
+            source.substring(0, position) +
+            newCode +
+            source.substring(
+                position + oldCode.length
+            );
+
+
+        showFixMessage(
+            index,
+            "✓ Fix applied successfully!",
+            "success"
+        );
+
+        return;
+    }
+
+
+    // Try line-based replacement
+
+    const lines =
+        source.split(/\r?\n/);
+
+
+    const lineNumber =
+        Number(fix.line);
+
+
+    if (
+        lineNumber >= 1 &&
+        lineNumber <= lines.length
+    ) {
+
+        const line =
+            lines[lineNumber - 1];
+
+
+        const linePosition =
+            line.indexOf(oldCode);
+
+
+        if (linePosition !== -1) {
+
+            lines[lineNumber - 1] =
+                line.substring(
+                    0,
+                    linePosition
+                ) +
+                newCode +
+                line.substring(
+                    linePosition + oldCode.length
+                );
+
+
+            textarea.value =
+                lines.join("\n");
+
+
+            showFixMessage(
+                index,
+                "✓ Fix applied successfully!",
+                "success"
+            );
+
+            return;
+        }
+
+    }
+
+
+    showFixMessage(
+        index,
+        "⚠ Suggested pattern is not present in the current source.",
+        "warning"
+    );
+}
+
+
+// ==========================================
+// MESSAGE
+// ==========================================
+
+function showFixMessage(
+    index,
+    message,
+    type
+) {
+
+    const box =
+        document.getElementById(
+            "fixMessage" + index
+        );
+
+
+    if (!box) {
+        return;
+    }
+
+
+    box.textContent =
+        message;
+
+
+    box.className =
+        "fix-message " + type;
+
+
+    setTimeout(() => {
+
+        box.textContent = "";
+
+        box.className =
+            "fix-message";
+
+    }, 4000);
+}
+
+
+// ==========================================
+// HTML ESCAPE
+// ==========================================
+
+function escapeHtml(text) {
+
+    if (
+        text === undefined ||
+        text === null
+    ) {
+
+        return "";
+    }
+
+
+    return String(text)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
 }
